@@ -120,6 +120,7 @@ class DriverTestBase(unittest.TestCase, LoggingIdMixin):
             self.version = svc.info.version
             self.flavor = svc.info.flavor
         if self.flavor == FIREBIRD:
+            self.flavor = FIREBIRD
             if self.version.startswith(FB30):
                 self.FBTEST_DB = 'fbtest30.fdb'
                 self.version = FB30
@@ -129,6 +130,7 @@ class DriverTestBase(unittest.TestCase, LoggingIdMixin):
             else:
                 raise Exception("Unsupported Firebird version (%s)" % self.version)
         elif self.flavor == REDDATABASE:
+            self.flavor = REDDATABASE
             if self.version.startswith(FB30):
                 self.FBTEST_DB = 'rdbtest30.fdb'
                 self.version = FB30
@@ -446,8 +448,8 @@ class TestConnection(DriverTestBase):
             con.info.get_info(DbInfoCode.USER_NAMES)
             self.assertGreater(len(con.info.response.raw), 5)
             # Properties
-            self.assertIn('Firebird', con.info.server_version)
-            self.assertIn('Firebird', con.info.firebird_version)
+            self.assertIn(self.flavor, con.info.server_version)
+            self.assertIn(self.flavor, con.info.firebird_version)
             self.assertIsInstance(con.info.version, str)
             self.assertGreaterEqual(con.info.engine_version, 3.0)
             self.assertGreaterEqual(con.info.ods, 12.0)
