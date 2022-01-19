@@ -504,7 +504,7 @@ class TestConnection(DriverTestBase):
                                      [t1.info.id, t2.info.id])
                 self.assertEqual(con.info.get_active_transaction_count(), 2)
             s = con.info.get_table_access_stats()
-            self.assertIn(len(s), [6,12])
+            self.assertIn(len(s), [8,12])
             self.assertIsInstance(s[0], driver.types.TableAccessStats)
             # Low level info calls
             with con.transaction_manager() as t1, con.transaction_manager() as t2:
