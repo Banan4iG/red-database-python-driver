@@ -1046,7 +1046,7 @@ class EngineVersionProvider(InfoProvider):
             self.con()._att.get_info(request, self.response.raw)
         else:
             self.con()._svc.query(None, request, self.response.raw)
-    def get_server_version(self, con: Union[Connection, Server]) -> str:
+    def get_server_version_string(self, con: Union[Connection, Server]) -> str:
         self.con = con
         info_code = DbInfoCode.FIREBIRD_VERSION if isinstance(con(), Connection) \
             else SrvInfoCode.SERVER_VERSION
@@ -1061,6 +1061,10 @@ class EngineVersionProvider(InfoProvider):
             self.response.read_byte()  # Cluster length
             self.response.read_short()  # number of strings
         verstr: str = self.response.read_pascal_string()
+        self.con = None
+        return verstr
+    def get_server_version(self, con: Union[Connection, Server]) -> str:
+        verstr = self.get_server_version_string(con)
         x = verstr.split()
         if x[0].find('V') > 0:
             (x, result) = x[0].split('V')
@@ -1069,11 +1073,14 @@ class EngineVersionProvider(InfoProvider):
         else: # pragma: no cover
             # Unknown version
             result = '0.0.0.0'
-        self.con = None
         return result
     def get_engine_version(self, con: Union[Connection, Server]) -> float:
         x = self.get_server_version(con).split('.')
         return float(f'{x[0]}.{x[1]}')
+    def get_server_flavor(self, con: Union[Connection, Server]) -> str:
+        verstr = self.get_server_version_string(con)
+        x = verstr.split()
+        return x[1]
 
 _engine_version_provider: EngineVersionProvider = EngineVersionProvider('utf8')
 
@@ -4065,6 +4072,7 @@ class ServerInfoProvider(InfoProvider):
         self._srv: Server = weakref.ref(server)
         # Get Firebird engine version
         self.__version = _engine_version_provider.get_server_version(self._srv)
+        self.__flavor = _engine_version_provider.get_server_flavor(self._srv)
         x = self.__version.split('.')
         self.__engine_version = float(f'{x[0]}.{x[1]}')
     def _close(self) -> None:
@@ -4196,7 +4204,11 @@ class ServerInfoProvider(InfoProvider):
         """List of attached databases.
         """
         return self.get_info(SrvInfoCode.SRV_DB_INFO)[1]
-
+    @property
+    def flavor(self) -> str:
+        """Firebird flavor string.
+        """
+        return self.__flavor
 class ServerServiceProvider:
     """Base class for server service providers.
     """
