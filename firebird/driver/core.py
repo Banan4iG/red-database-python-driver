@@ -1062,6 +1062,7 @@ class EngineVersionProvider(InfoProvider):
             self.response.read_short()  # number of strings
         verstr: str = self.response.read_pascal_string()
         self.con = None
+        self.response.rewind()
         return verstr
     def get_server_version(self, con: Union[Connection, Server]) -> str:
         verstr = self.get_server_version_string(con)
