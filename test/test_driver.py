@@ -42,6 +42,8 @@ from io import StringIO, BytesIO
 
 FB30 = '3.0'
 FB40 = '4.0'
+FIREBIRD = 'Firebird'
+REDDATABASE = 'RedDatabase'
 
 # Default server host
 #FBTEST_HOST = ''
@@ -116,14 +118,25 @@ class DriverTestBase(unittest.TestCase, LoggingIdMixin):
         #
         with connect_server(FBTEST_HOST, user=FBTEST_USER, password=FBTEST_PASSWORD) as svc:
             self.version = svc.info.version
-        if self.version.startswith(FB30):
-            self.FBTEST_DB = 'fbtest30.fdb'
-            self.version = FB30
-        elif self.version.startswith(FB40):
-            self.FBTEST_DB = 'fbtest40.fdb'
-            self.version = FB40
+            self.flavor = svc.info.flavor
+        if self.flavor == FIREBIRD:
+            if self.version.startswith(FB30):
+                self.FBTEST_DB = 'fbtest30.fdb'
+                self.version = FB30
+            elif self.version.startswith(FB40):
+                self.FBTEST_DB = 'fbtest40.fdb'
+                self.version = FB40
+            else:
+                raise Exception("Unsupported Firebird version (%s)" % self.version)
+        elif self.flavor == REDDATABASE:
+            if self.version.startswith(FB30):
+                self.FBTEST_DB = 'rdbtest30.fdb'
+                self.version = FB30
+            else:
+                raise Exception("Unsupported RedDatabase version (%s)" % self.version)
         else:
-            raise Exception("Unsupported Firebird version (%s)" % self.version)
+            raise Exception("Unsupported Firebird flavor (%s)" % self.flavor)
+
         #
         self.cwd = os.getcwd()
         self.dbpath = self.cwd if os.path.split(self.cwd)[1] == 'test' \
