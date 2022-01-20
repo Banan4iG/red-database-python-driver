@@ -2420,13 +2420,14 @@ class TestHooks(DriverTestBase):
 class TestFB4(DriverTestBase):
     def setUp(self):
         super().setUp()
+
+        if float(self.version) < float(FB40):
+            self.skipTest('Requires Firebird 4.0+')
+
         self.dbfile = os.path.join(self.dbpath, self.FBTEST_DB)
         self.con = connect(self.dbfile, user=FBTEST_USER, password=FBTEST_PASSWORD)
         self.con._logging_id_ = self.__class__.__name__
-        #
-        if self.con.info.engine_version < 4.0:
-            self.skipTest('Requires Firebird 4.0+')
-        #
+
         self.con2 = connect(self.dbfile, user=FBTEST_USER, password=FBTEST_PASSWORD, charset='utf-8')
         self.con2._logging_id_ = self.__class__.__name__
         #self.con.execute_immediate("CREATE TABLE FB4 (PK integer,T_TZ TIME WITH TIME ZONE,TS_TZ timestamp with time zone,T time,TS timestamp,DF decfloat,DF16 decfloat(16),DF34 decfloat(34),N128 numeric(34,6),D128 decimal(34,6))")
