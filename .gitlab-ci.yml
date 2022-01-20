@@ -1,0 +1,30 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  http_proxy: "http://git.red-soft.biz:3128"
+  https_proxy: "http://git.red-soft.biz:3128"
+  no_proxy: localhost,10.81.0.0/16,172.0.0.0/8,127.0.0.0/8,.red-soft.biz
+
+cache:
+  key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache
+
+test:
+  image: "python:$PYTHON_VERSION-slim-buster"
+  variables:
+     RDB_HOME: "${CI_PROJECT_DIR}/RedDatabase-${RDB_VERSION}"
+     LD_LIBRARY_PATH: "${RDB_HOME}/lib"
+  script:
+    - apt update && apt install -y --no-install-recommends --no-install-suggests wget libgssapi-krb5-2
+    - wget http://builds.red-soft.biz/release_hub/rdb30/${RDB_VERSION}/download/red-database:linux-x86_64-open:${RDB_VERSION}:tar.gz -O rdb.tgz
+    - tar xzf rdb.tgz
+    - cd ${RDB_HOME}
+    - ./bin/gsec -user sysdba -pass masterkey -add sysdba -pw masterkey
+    - ./bin/rdbguard -daemon
+    - pip install -e .
+    - pip install pytest
+    - pytest -v
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ['3.8']
+      - RDB_VERSION: ['3.0.8.0']
