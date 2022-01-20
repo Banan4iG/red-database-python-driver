@@ -12,7 +12,7 @@ cache:
 test:
   image: "python:$PYTHON_VERSION-slim-buster"
   variables:
-     RDB_HOME: "${CI_PROJECT_DIR}/RedDatabase-${RDB_VERSION}"
+     RDB_HOME: "${CI_PROJECT_DIR}/RedDatabase-${RDB_VERSION}-x86_64"
      LD_LIBRARY_PATH: "${RDB_HOME}/lib"
   script:
     - apt update && apt install -y --no-install-recommends --no-install-suggests wget libgssapi-krb5-2
@@ -21,6 +21,7 @@ test:
     - cd ${RDB_HOME}
     - ./bin/gsec -user sysdba -pass masterkey -add sysdba -pw masterkey
     - ./bin/rdbguard -daemon
+    - cd ${CI_PROJECT_DIR}
     - pip install -e .
     - pip install pytest
     - pytest -v
