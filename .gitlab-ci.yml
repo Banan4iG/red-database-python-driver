@@ -27,4 +27,4 @@ test:
   parallel:
     matrix:
       - PYTHON_VERSION: ['3.8']
-      - RDB_VERSION: ['3.0.8.0']
+        RDB_VERSION: ['3.0.8.0']
