@@ -2187,8 +2187,12 @@ def create_database(database: str, *, user: str=None, password: str=None, role: 
                 raise ValueError(f"Configuration for server '{db_config.server.value}' not found")
     if user is None:
         user = db_config.user.value
+        if user is None:
+            user = srv_config.user.value
     if password is None:
         password = db_config.password.value
+        if password is None:
+            password = srv_config.password.value
     if role is None:
         role = db_config.role.value
     if charset is None:
@@ -4251,8 +4255,9 @@ class ServerDbServices3(ServerServiceProvider):
                backup_file_sizes: Sequence[int]=(),
                flags: SrvBackupFlag=SrvBackupFlag.NONE, role: str=None,
                callback: CB_OUTPUT_LINE=None, stats: str=None,
-               verbose: bool=False, skip_data: str=None, include_data: str=None,
-               keyhoder: str=None, keyname: str=None, crypt: str=None) -> None:
+               verbose: bool=False, verbint: int=None, skip_data: str=None,
+               include_data: str=None, keyhoder: str=None, keyname: str=None,
+               crypt: str=None) -> None:
         """Request logical (GBAK) database backup. **(ASYNC service)**
 
         Arguments:
@@ -4264,6 +4269,7 @@ class ServerDbServices3(ServerServiceProvider):
             callback: Function to call back with each output line.
             stats: Backup statistic options (TDWR).
             verbose: Whether output should be verbose or not.
+            verbint: Verbose information with explicit interval (number of records)
             skip_data: String with table names whose data should be excluded from backup.
             include_data: String with table names whose data should be included into backup [Firebird 4].
             keyholder: Keyholder name [Firebird 4]
@@ -4299,6 +4305,8 @@ class ServerDbServices3(ServerServiceProvider):
             spb.insert_int(SPBItem.OPTIONS, flags)
             if verbose:
                 spb.insert_tag(SPBItem.VERBOSE)
+            if verbint is not None:
+                spb.insert_int(SPBItem.VERBINT, verbint)
             if stats:
                 spb.insert_string(SrvBackupOption.STAT, stats)
             self._srv()._svc.start(spb.get_buffer())
@@ -4310,10 +4318,11 @@ class ServerDbServices3(ServerServiceProvider):
                 db_file_pages: Sequence[int]=(),
                 flags: SrvRestoreFlag=SrvRestoreFlag.CREATE, role: str=None,
                 callback: CB_OUTPUT_LINE=None, stats: str=None,
-                verbose: bool=True, skip_data: str=None, page_size: int=None,
-                buffers: int=None, access_mode: DbAccessMode=DbAccessMode.READ_WRITE,
-                include_data: str=None, keyhoder: str=None, keyname: str=None,
-                crypt: str=None, replica_mode: ReplicaMode=None) -> None:
+                verbose: bool=False, verbint: int=None, skip_data: str=None,
+                page_size: int=None, buffers: int=None,
+                access_mode: DbAccessMode=DbAccessMode.READ_WRITE, include_data: str=None,
+                keyhoder: str=None, keyname: str=None, crypt: str=None,
+                replica_mode: ReplicaMode=None) -> None:
         """Request database restore from logical (GBAK) backup. **(ASYNC service)**
 
         Arguments:
@@ -4325,6 +4334,7 @@ class ServerDbServices3(ServerServiceProvider):
             callback: Function to call back with each output line.
             stats: Restore statistic options (TDWR).
             verbose: Whether output should be verbose or not.
+            verbint: Verbose information with explicit interval (number of records)
             skip_data: String with table names whose data should be excluded from restore.
             page_size: Page size for restored database.
             buffers: Cache size for restored database.
@@ -4374,6 +4384,8 @@ class ServerDbServices3(ServerServiceProvider):
             spb.insert_int(SPBItem.OPTIONS, flags)
             if verbose:
                 spb.insert_tag(SPBItem.VERBOSE)
+            if verbint is not None:
+                spb.insert_int(SPBItem.VERBINT, verbint)
             if stats:
                 spb.insert_string(SrvRestoreOption.STAT, stats)
             self._srv()._svc.start(spb.get_buffer())
@@ -5337,9 +5349,9 @@ class Server(LoggingIdMixin):
             self._eof = self.response.get_tag() == isc_info_end
         else: # LINE mode
             self._eof = not data
-            while self.response.get_tag() == isc_info_truncated:
+            while (tag := self.response.get_tag()) == isc_info_truncated:
                 data += self._query_output(timeout)
-            if self.response.get_tag() != isc_info_end:  # pragma: no cover
+            if tag != isc_info_end:  # pragma: no cover
                 raise InterfaceError("Malformed result buffer (missing isc_info_end item)")
         init += data
         if data and self.mode is SrvInfoCode.LINE:
