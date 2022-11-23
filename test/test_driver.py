@@ -22,7 +22,7 @@
 # See LICENSE.TXT for details.
 
 import unittest
-from unittest.mock import patch
+#from unittest.mock import patch
 import datetime
 import sys
 import os
@@ -1062,6 +1062,24 @@ class TestCursor(DriverTestBase):
             with self.assertRaises(InterfaceError) as cm:
                 cur.fetchone()
             self.assertTupleEqual(cm.exception.args, ('Cannot fetch from cursor that did not executed a statement.',))
+    def to_dict(self):
+        cmd = 'select * from country'
+        sample = {'COUNTRY': 'USA', 'CURRENCY': 'Dollar'}
+        with self.con.cursor() as cur:
+            cur.execute(cmd)
+            row = cur.fetchone()
+            d = cur.to_dict(row)
+            self.assertEqual(len(d), 2)
+            self.assertDictEqual(d, sample)
+            d = {'COUNTRY': 'UNKNOWN', 'CURRENCY': 'UNKNOWN'}
+            d2 = cur.to_dict(row, d)
+            self.assertDictEqual(d2, sample)
+            self.assertIs(d, d2)
+            with self.assertRaises(AssertionError) as cm:
+                cur.to_dict([1])
+                cur.to_dict([1, 2, 3])
+            self.assertTupleEqual(cm.exception.args, ('Length of data must match number of fields',))
+
 
 class TestScrollableCursor(DriverTestBase):
     def setUp(self):
@@ -1586,7 +1604,7 @@ class TestServerStandard(DriverTestBase):
             svc.info.get_log()
             self.assertTrue(svc.is_running())
             # fetch materialized
-            print(''.join(svc.readlines()))
+            svc.readlines()
             self.assertFalse(svc.is_running())
     def test_wait(self):
         with connect_server(FBTEST_HOST, user='SYSDBA', password=FBTEST_PASSWORD) as svc:
@@ -1647,7 +1665,7 @@ class TestServerServices(DriverTestBase):
         self.assertGreater(len(output), 0)
         self.assertEqual(output, log)
     def test_04_get_limbo_transaction_ids(self):
-        #self.skipTest('Not implemented yet')
+        self.skipTest('Not implemented yet')
         ids = self.svc.database.get_limbo_transaction_ids(database='employee')
         self.assertIsInstance(ids, type(list()))
     def test_05_trace(self):
