@@ -3898,7 +3898,7 @@ class Cursor(LoggingIdMixin):
         assert self._result is not None
         return self._result.is_bof()
     def to_dict(self, row: Tuple, into: Dict=None) -> Dict:
-        """Return row tuple as dictionary with field names as keys. Returns new dictionary
+        """Returns row tuple as dictionary with field names as keys. Returns new dictionary
         if `into` argument is not provided, otherwise returns `into` dictionary updated
         with row data.
 
